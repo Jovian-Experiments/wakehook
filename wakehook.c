@@ -20,7 +20,7 @@ int cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 	return 0;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc __attribute__((unused)), char* argv[] __attribute__((unused))) {
 	int res;
 	sd_bus* system_bus = NULL;
 	sd_bus* session_bus = NULL;

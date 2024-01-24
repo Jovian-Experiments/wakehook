@@ -4,7 +4,6 @@ SDBUS_CFLAGS := $(shell pkg-config --cflags libsystemd)
 SDBUS_LDFLAGS := $(shell pkg-config --libs libsystemd)
 
 CFLAGS += -Wall -Wextra -Werror -Wno-format-truncation -Wno-stringop-overflow $(SDBUS_CFLAGS)
-LDFLAGS += $(SDBUS_LDFLAGS)
 
 ifneq ($(ASAN),)
   CFLAGS += -g -fsanitize=address
@@ -13,7 +12,8 @@ else ifneq ($(DEBUG),)
   CFLAGS += -g
   LDFLAGS += -g
 else
-  CFLAGS += -O3 -D_FORTIFY_SOURCE=2
+  CFLAGS += -O2 -D_FORTIFY_SOURCE=2
+  LDFLAGS += -O2
 endif
 
 .PHONY: clean install
@@ -23,5 +23,5 @@ clean:
 
 install: all
 
-wakehook: wakehook.c
-	$(CC) $(LDFLAGS) -o $@ $^
+wakehook: wakehook.o
+	$(CC) $(SDBUS_LDFLAGS) $(LDFLAGS) -o $@ $^
