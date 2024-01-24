@@ -27,7 +27,13 @@ int main(int argc, char* argv[]) {
 	sd_bus_slot* slot = NULL;
 
 	res = sd_bus_open_system(&system_bus);
+	if (res < 0) {
+		goto shutdown;
+	}
 	res = sd_bus_open_user(&session_bus);
+	if (res < 0) {
+		goto shutdown;
+	}
 
 	res = sd_bus_match_signal(system_bus, &slot, "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "PrepareForSleep", cb, session_bus);
 	if (res < 0) {
