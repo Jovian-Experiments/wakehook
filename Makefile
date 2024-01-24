@@ -21,7 +21,9 @@ endif
 clean:
 	rm -f wakehook.o wakehook
 
-install: all
+install: all LICENSE
+	install -D -m 755 wakehook $(DESTDIR)/usr/lib/hwsupport/wakehook
+	install -D -m 644 LICENSE $(DESTDIR)/usr/share/licenses/wakehook
 
 wakehook: wakehook.o
 	$(CC) $(SDBUS_LDFLAGS) $(LDFLAGS) -o $@ $^
