@@ -19,7 +19,7 @@ struct Context {
 	do { \
 		struct timespec ts; \
 		clock_gettime(CLOCK_REALTIME, &ts); \
-		fprintf(stderr, "[wakehook] %lli.%li: " FMT, (long long) ts.tv_sec, (long) ts.tv_nsec / 1000, __VA_ARGS__); \
+		fprintf(stderr, "[wakehook] %lli.%li: " FMT "\n", (long long) ts.tv_sec, (long) ts.tv_nsec / 1000, __VA_ARGS__); \
 	} while (0)
 
 int activate_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
@@ -27,7 +27,7 @@ int activate_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 	int is_active;
 	int res = sd_bus_message_read_basic(m, 'b', &is_active);
 	if (res < 0) {
-		LOG("Error reading activation message: %i %s", res, strerror(res));
+		LOG("Error reading activation message: %i %s", res, strerror(-res));
 		return res;
 	}
 	LOG("Activated, is current? %i", is_active);
@@ -41,7 +41,7 @@ int activate_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 	}
 	res = sd_bus_call_method(ctx->session_bus, "org.kde.plasma.remotecontrollers", "/CEC", "org.kde.plasma.remotecontrollers.CEC", "makeActiveSource", ret_error, NULL, "");
 	if (res < 0) {
-		LOG("Failed to call org.kde.plasma.remotecontrollers.CEC.makeActiveSource: %i %s", res, strerror(res));
+		LOG("Failed to call org.kde.plasma.remotecontrollers.CEC.makeActiveSource: %i %s", res, strerror(-res));
 		return res;
 	}
 	return 0;
@@ -52,7 +52,7 @@ int sleep_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 	int will_sleep;
 	int res = sd_bus_message_read_basic(m, 'b', &will_sleep);
 	if (res < 0) {
-		LOG("Error reading sleep message: %i %s", res, strerror(res));
+		LOG("Error reading sleep message: %i %s", res, strerror(-res));
 		return res;
 	}
 	LOG("Going to sleep? %i", will_sleep);
@@ -69,7 +69,7 @@ int sleep_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 			continue;
 		}
 		if (res < 0) {
-			LOG("Failed to call org.kde.plasma.remotecontrollers.CEC.powerOnDevices: %i %s", res, strerror(res));
+			LOG("Failed to call org.kde.plasma.remotecontrollers.CEC.powerOnDevices: %i %s", res, strerror(-res));
 			return res;
 		}
 		break;
@@ -77,7 +77,7 @@ int sleep_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 	ctx->do_activate = true;
 	res = sd_bus_call_method(ctx->session_bus, "org.kde.plasma.remotecontrollers", "/CEC", "org.kde.plasma.remotecontrollers.CEC", "makeActiveSource", ret_error, NULL, "");
 	if (res < 0) {
-		LOG("Failed to call org.kde.plasma.remotecontrollers.CEC.makeActiveSource: %i %s", res, strerror(res));
+		LOG("Failed to call org.kde.plasma.remotecontrollers.CEC.makeActiveSource: %i %s", res, strerror(-res));
 		return res;
 	}
 	return 0;
@@ -91,24 +91,24 @@ int main(int argc __attribute__((unused)), char* argv[] __attribute__((unused)))
 
 	res = sd_bus_open_system(&ctx.system_bus);
 	if (res < 0) {
-		LOG("Failed to open system bus: %i %s", res, strerror(res));
+		LOG("Failed to open system bus: %i %s", res, strerror(-res));
 		goto shutdown;
 	}
 	res = sd_bus_open_user(&ctx.session_bus);
 	if (res < 0) {
-		LOG("Failed to open session bus: %i %s", res, strerror(res));
+		LOG("Failed to open session bus: %i %s", res, strerror(-res));
 		goto shutdown;
 	}
 
 	res = sd_bus_match_signal(ctx.session_bus, &activate_slot, "org.kde.plasma.remotecontrollers", "/CEC", "org.kde.plasma.remotecontrollers.CEC", "sourceActivated", activate_cb, &ctx);
 	if (res < 0) {
-		LOG("Failed to match bus signal org.kde.plasma.remotecontrollers.CEC.sourceActivated: %i %s", res, strerror(res));
+		LOG("Failed to match bus signal org.kde.plasma.remotecontrollers.CEC.sourceActivated: %i %s", res, strerror(-res));
 		goto shutdown;
 	}
 
 	res = sd_bus_match_signal(ctx.system_bus, &sleep_slot, "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "PrepareForSleep", sleep_cb, &ctx);
 	if (res < 0) {
-		LOG("Failed to match bus signal org.freedesktop.login1.Manager.PrepareForSleep: %i %s", res, strerror(res));
+		LOG("Failed to match bus signal org.freedesktop.login1.Manager.PrepareForSleep: %i %s", res, strerror(-res));
 		goto shutdown;
 	}
 
@@ -120,7 +120,7 @@ int main(int argc __attribute__((unused)), char* argv[] __attribute__((unused)))
 		res = sd_bus_process(ctx.system_bus, NULL);
 	}
 	if (res != -EINTR) {
-		LOG("Exiting with error status: %i %s", res, strerror(res));
+		LOG("Exiting with error status: %i %s", res, strerror(-res));
 	}
 
 shutdown:
