@@ -1,7 +1,11 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
+#include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <systemd/sd-bus.h>
+#include <unistd.h>
+
+#define MAX_TRIES 5
 
 struct Context {
 	sd_bus* system_bus;
@@ -30,14 +34,23 @@ int activate_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 
 int sleep_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 	struct Context* ctx = userdata;
-	int sleep;
-	int res = sd_bus_message_read_basic(m, 'b', &sleep);
-	if (res < 0 || sleep) {
+	int will_sleep;
+	int res = sd_bus_message_read_basic(m, 'b', &will_sleep);
+	if (res < 0 || will_sleep) {
 		return res;
 	}
-	res = sd_bus_call_method(ctx->session_bus, "org.kde.plasma.remotecontrollers", "/CEC", "org.kde.plasma.remotecontrollers.CEC", "powerOnDevices", ret_error, NULL, "");
-	if (res < 0) {
-		return res;
+
+	int try;
+	for (try = 0; try < MAX_TRIES; ++try) {
+		res = sd_bus_call_method(ctx->session_bus, "org.kde.plasma.remotecontrollers", "/CEC", "org.kde.plasma.remotecontrollers.CEC", "powerOnDevices", ret_error, NULL, "");
+		if (res == -ETIMEDOUT) {
+			sleep(1);
+			continue;
+		}
+		if (res < 0) {
+			return res;
+		}
+		break;
 	}
 	ctx->do_activate = true;
 	res = sd_bus_call_method(ctx->session_bus, "org.kde.plasma.remotecontrollers", "/CEC", "org.kde.plasma.remotecontrollers.CEC", "makeActiveSource", ret_error, NULL, "");
