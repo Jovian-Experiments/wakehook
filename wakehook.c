@@ -8,11 +8,13 @@
 #include <unistd.h>
 
 #define MAX_TRIES 5
+#define ACTIVATE_TIMEOUT 10000000000LL
 
 struct Context {
 	sd_bus* system_bus;
 	sd_bus* session_bus;
 	bool do_activate;
+	struct timespec start_activate;
 };
 
 #define LOG(FMT, ...) \
@@ -33,6 +35,19 @@ int activate_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 	LOG("Activated, is current? %i", is_active);
 	if (!ctx->do_activate) {
 		return res;
+	}
+
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	ts.tv_sec -= ctx->start_activate.tv_sec;
+	ts.tv_nsec -= ctx->start_activate.tv_nsec;
+	if (ts.tv_nsec < 0) {
+		--ts.tv_sec;
+		ts.tv_nsec += 1000000000;
+	}
+
+	if (ts.tv_sec * 1000000000 + ts.tv_nsec >= ACTIVATE_TIMEOUT) {
+		LOG("Source activation timed out (%lli > %lli)", (long long) (ts.tv_sec * 1000000000 + ts.tv_nsec), ACTIVATE_TIMEOUT);
 	}
 
 	if (is_active) {
@@ -77,6 +92,7 @@ int sleep_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 		return res;
 	}
 	ctx->do_activate = true;
+	clock_gettime(CLOCK_REALTIME, &ctx->start_activate);
 	res = sd_bus_call_method(ctx->session_bus, "org.kde.plasma.remotecontrollers", "/CEC", "org.kde.plasma.remotecontrollers.CEC", "makeActiveSource", ret_error, NULL, "");
 	if (res < 0) {
 		LOG("Failed to call org.kde.plasma.remotecontrollers.CEC.makeActiveSource: %i %s", res, strerror(-res));
