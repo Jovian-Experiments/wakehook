@@ -62,6 +62,9 @@ int sleep_cb(sd_bus_message* m, void* userdata, sd_bus_error* ret_error) {
 
 	int try;
 	for (try = 0; try < MAX_TRIES; ++try) {
+		if (sd_bus_error_is_set(ret_error)) {
+			sd_bus_error_free(ret_error);
+		}
 		res = sd_bus_call_method(ctx->session_bus, "org.kde.plasma.remotecontrollers", "/CEC", "org.kde.plasma.remotecontrollers.CEC", "powerOnDevices", ret_error, NULL, "");
 		if (res == -EHOSTUNREACH) {
 			LOG("Call org.kde.plasma.remotecontrollers.CEC.powerOnDevices timed out, trying again (%i/%i)", try + 1, MAX_TRIES);
