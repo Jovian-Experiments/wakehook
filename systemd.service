@@ -1,0 +1,6 @@
+[Unit]
+After=gamescope-session.service
+
+[Service]
+ExecStart=/usr/lib/hwsupport/wakehook
+Restart=always

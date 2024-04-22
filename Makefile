@@ -24,6 +24,9 @@ clean:
 install: all LICENSE
 	install -D -m 755 wakehook $(DESTDIR)/usr/lib/hwsupport/wakehook
 	install -D -m 644 LICENSE $(DESTDIR)/usr/share/licenses/wakehook
+	install -D -m 644 systemd.service $(DESTDIR)/usr/lib/systemd/user/wakehook.service
+	mkdir -p $(DESTDIR)/usr/lib/systemd/user/gamescope-session.service.wants
+	ln -s ../wakehook.service $(DESTDIR)/usr/lib/systemd/user/gamescope-session.service.wants/
 
 wakehook: wakehook.o
 	$(CC) $(SDBUS_LDFLAGS) $(LDFLAGS) -o $@ $^
