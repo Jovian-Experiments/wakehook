@@ -12,7 +12,7 @@ else ifneq ($(DEBUG),)
   CFLAGS += -g
   LDFLAGS += -g
 else
-  CFLAGS += -O2 -D_FORTIFY_SOURCE=2
+  CFLAGS += -O2
   LDFLAGS += -O2
 endif
 
